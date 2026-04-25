@@ -3,6 +3,9 @@
 Live webcam playground for comparing black-and-white and dithering filters side
 by side with a draggable split view.
 
+- Repo: [github.com/baditaflorin/webcam-dither-lab](https://github.com/baditaflorin/webcam-dither-lab)
+- Live demo: [baditaflorin.github.io/webcam-dither-lab](https://baditaflorin.github.io/webcam-dither-lab/)
+
 ## Features
 
 - Live webcam input in the browser
