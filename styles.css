@@ -1,13 +1,15 @@
 :root {
   color-scheme: light;
-  --bg: #f4eee4;
-  --panel: rgba(255, 251, 245, 0.88);
-  --text: #1d1d1b;
-  --muted: #655f59;
+  --bg: #f7f4eb;
+  --panel: rgba(255, 252, 246, 0.9);
+  --text: #181b1e;
+  --muted: #5e6570;
   --line: rgba(29, 29, 27, 0.12);
-  --shadow: 0 18px 48px rgba(58, 41, 20, 0.12);
-  --primary: #d6572f;
-  --primary-dark: #8a3419;
+  --shadow: 0 18px 48px rgba(28, 43, 54, 0.14);
+  --primary: #2a9d8f;
+  --primary-dark: #1f6f66;
+  --warm: #d6572f;
+  --ink: #12151a;
   --split-pos: 50%;
 }
 
@@ -21,9 +23,9 @@ body {
   font-family: "Space Grotesk", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(214, 87, 47, 0.2), transparent 26%),
-    radial-gradient(circle at top right, rgba(112, 150, 255, 0.16), transparent 24%),
-    linear-gradient(180deg, var(--bg), #f7f3ec 60%, #efe3d0 100%);
+    linear-gradient(115deg, rgba(42, 157, 143, 0.16), transparent 28%),
+    linear-gradient(245deg, rgba(214, 87, 47, 0.14), transparent 24%),
+    linear-gradient(180deg, var(--bg), #f2f6f3 58%, #e9edf0 100%);
 }
 
 body::before {
@@ -129,7 +131,7 @@ h1 {
 
 .button-primary {
   background: var(--primary);
-  color: #fff8f0;
+  color: #f7fffb;
 }
 
 .button-secondary {
@@ -246,6 +248,23 @@ h1 {
   right: 16px;
 }
 
+.metrics-hud {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  max-width: calc(100% - 32px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(18, 21, 26, 0.7);
+  color: #eef8f4;
+  backdrop-filter: blur(8px);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.76rem;
+}
+
 .split-slider-wrap {
   display: grid;
   gap: 8px;
@@ -267,6 +286,37 @@ h1 {
 
 input[type="range"] {
   accent-color: var(--primary);
+}
+
+.preset-strip {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.preset-button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(29, 29, 27, 0.1);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(243, 247, 246, 0.78));
+  color: var(--ink);
+  box-shadow: 0 10px 24px rgba(28, 43, 54, 0.08);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.preset-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(42, 157, 143, 0.38);
+  box-shadow: 0 14px 30px rgba(42, 157, 143, 0.14);
 }
 
 .filter-grid {
@@ -365,5 +415,11 @@ pre {
   .filter-tag {
     top: auto;
     bottom: 16px;
+  }
+
+  .metrics-hud {
+    position: static;
+    margin: 10px;
+    white-space: normal;
   }
 }

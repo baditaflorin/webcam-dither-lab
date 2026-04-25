@@ -28,6 +28,15 @@
           <button id="stopCamera" class="button button-secondary" type="button" disabled>
             Stop camera
           </button>
+          <button id="captureSnapshot" class="button button-secondary" type="button">
+            Capture PNG
+          </button>
+          <button id="copyShareLink" class="button button-secondary" type="button">
+            Copy link
+          </button>
+          <button id="resetLab" class="button button-secondary" type="button">
+            Reset
+          </button>
         </div>
       </section>
 
@@ -50,6 +59,9 @@
             <div class="filter-tag filter-tag-right" id="rightFilterLabel">
               B · Parker 3x3
             </div>
+            <div id="metricsHud" class="metrics-hud">
+              FPS -- · A waiting · B manual
+            </div>
             <div class="split-line" aria-hidden="true"></div>
             <button
               id="splitHandle"
@@ -71,6 +83,24 @@
         <canvas id="rightCanvas" width="640" height="360" hidden></canvas>
       </section>
 
+      <section class="preset-strip" aria-label="Filter presets">
+        <button class="preset-button" type="button" data-preset="detail">
+          Detail Lab
+        </button>
+        <button class="preset-button" type="button" data-preset="color">
+          Color Proof
+        </button>
+        <button class="preset-button" type="button" data-preset="poster">
+          Poster Ink
+        </button>
+        <button class="preset-button" type="button" data-preset="soft">
+          Soft Studio
+        </button>
+        <button class="preset-button" type="button" data-preset="glitch">
+          Glitch RGB
+        </button>
+      </section>
+
       <section class="filter-grid">
         <article class="panel filter-panel">
           <div class="filter-panel-header">
@@ -85,6 +115,7 @@
               <option value="parker3">Parker 3x3</option>
               <option value="noiseDither">White Noise</option>
               <option value="ignDither">Interleaved Gradient Noise</option>
+              <option value="rgbDither">RGB Dither</option>
               <option value="bayer4">Bayer 4x4</option>
               <option value="floydSteinberg">Floyd-Steinberg</option>
               <option value="atkinson">Atkinson</option>
@@ -93,6 +124,28 @@
               <option value="threshold">Threshold</option>
               <option value="grayscale">Grayscale</option>
               <option value="original">Original</option>
+            </select>
+          </div>
+
+          <div class="control">
+            <label for="leftColorMode">Color Output</label>
+            <select id="leftColorMode">
+              <option value="mono">Native</option>
+              <option value="duotone" selected>Duotone</option>
+              <option value="palette">Palette Map</option>
+              <option value="source">Source Color Mask</option>
+              <option value="thermal">Thermal Ramp</option>
+            </select>
+          </div>
+
+          <div class="control">
+            <label for="leftPalette">Palette</label>
+            <select id="leftPalette">
+              <option value="paperInk" selected>Paper Ink</option>
+              <option value="emberCyan">Ember Cyan</option>
+              <option value="mossBloom">Moss Bloom</option>
+              <option value="ultraviolet">Ultraviolet</option>
+              <option value="solarPop">Solar Pop</option>
             </select>
           </div>
 
@@ -154,6 +207,7 @@
               <option value="parker3" selected>Parker 3x3</option>
               <option value="noiseDither">White Noise</option>
               <option value="ignDither">Interleaved Gradient Noise</option>
+              <option value="rgbDither">RGB Dither</option>
               <option value="bayer4">Bayer 4x4</option>
               <option value="floydSteinberg">Floyd-Steinberg</option>
               <option value="atkinson">Atkinson</option>
@@ -162,6 +216,28 @@
               <option value="threshold">Threshold</option>
               <option value="grayscale">Grayscale</option>
               <option value="original">Original</option>
+            </select>
+          </div>
+
+          <div class="control">
+            <label for="rightColorMode">Color Output</label>
+            <select id="rightColorMode">
+              <option value="mono" selected>Native</option>
+              <option value="duotone">Duotone</option>
+              <option value="palette">Palette Map</option>
+              <option value="source">Source Color Mask</option>
+              <option value="thermal">Thermal Ramp</option>
+            </select>
+          </div>
+
+          <div class="control">
+            <label for="rightPalette">Palette</label>
+            <select id="rightPalette">
+              <option value="paperInk" selected>Paper Ink</option>
+              <option value="emberCyan">Ember Cyan</option>
+              <option value="mossBloom">Moss Bloom</option>
+              <option value="ultraviolet">Ultraviolet</option>
+              <option value="solarPop">Solar Pop</option>
             </select>
           </div>
 

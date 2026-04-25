@@ -12,6 +12,11 @@ by side with a draggable split view.
 - Split-view comparison with a draggable divider
 - Manual filter lanes for A/B testing
 - Auto Best Detail mode that scores candidates and picks the strongest detail-preserving result
+- Color output modes for duotone, palette, source-color, and thermal looks
+- Curated presets for quick visual comparisons
+- PNG snapshot export
+- Shareable URL state for exact lab settings
+- Live FPS, render-time, and auto-selection feedback
 - Tone model switching between linear, perceptual `sqrt`, and gamma `2.2`
 
 ## Filters
@@ -20,6 +25,7 @@ by side with a draggable split view.
 - Parker 3x3
 - White Noise
 - Interleaved Gradient Noise
+- RGB Dither
 - Bayer 4x4
 - Floyd-Steinberg
 - Atkinson
@@ -28,6 +34,14 @@ by side with a draggable split view.
 - Threshold
 - Grayscale
 - Original
+
+## Color Modes
+
+- Native
+- Duotone
+- Palette Map
+- Source Color Mask
+- Thermal Ramp
 
 ## Detail Scoring
 
@@ -40,6 +54,16 @@ combining:
 
 That makes it a practical "which one keeps the most visible structure?" mode
 instead of just picking the most contrasty output.
+
+## Architecture Decisions
+
+The project keeps lightweight ADRs in `docs/adr`:
+
+- `0001-color-rendering-pipeline.md`
+- `0002-curated-comparison-presets.md`
+- `0003-shareable-lab-state.md`
+- `0004-snapshot-export.md`
+- `0005-live-metrics-and-auto-explainability.md`
 
 ## Local Run
 

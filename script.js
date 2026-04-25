@@ -1,5 +1,8 @@
 const startCameraButton = document.getElementById("startCamera");
 const stopCameraButton = document.getElementById("stopCamera");
+const captureSnapshotButton = document.getElementById("captureSnapshot");
+const copyShareLinkButton = document.getElementById("copyShareLink");
+const resetLabButton = document.getElementById("resetLab");
 const cameraStatus = document.getElementById("cameraStatus");
 const sourceVideo = document.getElementById("sourceVideo");
 const comparisonCanvas = document.getElementById("comparisonCanvas");
@@ -11,12 +14,24 @@ const splitHandle = document.getElementById("splitHandle");
 const splitSlider = document.getElementById("splitSlider");
 const leftFilterLabel = document.getElementById("leftFilterLabel");
 const rightFilterLabel = document.getElementById("rightFilterLabel");
+const metricsHud = document.getElementById("metricsHud");
 
+const CONTROL_KEYS = [
+  "type",
+  "colorMode",
+  "palette",
+  "toneCurve",
+  "threshold",
+  "noiseAmount",
+  "contrast",
+  "seed",
+];
 const THRESHOLD_MODES = new Set([
   "autoDetail",
   "threshold",
   "noiseDither",
   "ignDither",
+  "rgbDither",
   "parker3",
   "bayer4",
   "floydSteinberg",
@@ -24,12 +39,13 @@ const THRESHOLD_MODES = new Set([
   "burkes",
   "sierraLite",
 ]);
-const NOISE_MODES = new Set(["autoDetail", "noiseDither", "ignDither"]);
+const NOISE_MODES = new Set(["autoDetail", "noiseDither", "ignDither", "rgbDither"]);
 const AUTO_DETAIL_CANDIDATES = [
   "parker3",
   "bayer4",
   "noiseDither",
   "ignDither",
+  "rgbDither",
   "floydSteinberg",
   "atkinson",
   "burkes",
@@ -96,6 +112,162 @@ const ERROR_DIFFUSION_FILTERS = {
   },
 };
 
+const COLOR_PALETTES = {
+  paperInk: [
+    [24, 22, 20],
+    [98, 83, 72],
+    [207, 86, 45],
+    [245, 205, 124],
+    [255, 248, 236],
+  ],
+  emberCyan: [
+    [11, 18, 25],
+    [20, 84, 99],
+    [42, 186, 190],
+    [242, 96, 57],
+    [255, 235, 185],
+  ],
+  mossBloom: [
+    [19, 29, 24],
+    [47, 83, 64],
+    [103, 158, 96],
+    [214, 204, 97],
+    [249, 241, 204],
+  ],
+  ultraviolet: [
+    [12, 12, 28],
+    [55, 45, 105],
+    [109, 72, 165],
+    [231, 86, 131],
+    [247, 230, 255],
+  ],
+  solarPop: [
+    [15, 19, 36],
+    [29, 88, 133],
+    [62, 168, 146],
+    [248, 207, 85],
+    [255, 250, 229],
+  ],
+};
+
+const PRESETS = {
+  detail: {
+    split: 0.5,
+    left: {
+      type: "autoDetail",
+      colorMode: "duotone",
+      palette: "paperInk",
+      toneCurve: "perceptual",
+      threshold: 128,
+      noiseAmount: 42,
+      contrast: 1.15,
+      seed: 137,
+    },
+    right: {
+      type: "parker3",
+      colorMode: "mono",
+      palette: "paperInk",
+      toneCurve: "linear",
+      threshold: 128,
+      noiseAmount: 12,
+      contrast: 1.05,
+      seed: 412,
+    },
+  },
+  color: {
+    split: 0.52,
+    left: {
+      type: "rgbDither",
+      colorMode: "mono",
+      palette: "emberCyan",
+      toneCurve: "gamma",
+      threshold: 118,
+      noiseAmount: 34,
+      contrast: 1.2,
+      seed: 221,
+    },
+    right: {
+      type: "burkes",
+      colorMode: "source",
+      palette: "emberCyan",
+      toneCurve: "perceptual",
+      threshold: 128,
+      noiseAmount: 22,
+      contrast: 1.08,
+      seed: 412,
+    },
+  },
+  poster: {
+    split: 0.46,
+    left: {
+      type: "bayer4",
+      colorMode: "palette",
+      palette: "solarPop",
+      toneCurve: "linear",
+      threshold: 130,
+      noiseAmount: 14,
+      contrast: 1.35,
+      seed: 80,
+    },
+    right: {
+      type: "atkinson",
+      colorMode: "duotone",
+      palette: "solarPop",
+      toneCurve: "gamma",
+      threshold: 126,
+      noiseAmount: 10,
+      contrast: 1.28,
+      seed: 212,
+    },
+  },
+  soft: {
+    split: 0.58,
+    left: {
+      type: "sierraLite",
+      colorMode: "source",
+      palette: "mossBloom",
+      toneCurve: "perceptual",
+      threshold: 124,
+      noiseAmount: 18,
+      contrast: 0.92,
+      seed: 330,
+    },
+    right: {
+      type: "grayscale",
+      colorMode: "thermal",
+      palette: "mossBloom",
+      toneCurve: "perceptual",
+      threshold: 128,
+      noiseAmount: 0,
+      contrast: 1.05,
+      seed: 137,
+    },
+  },
+  glitch: {
+    split: 0.5,
+    left: {
+      type: "rgbDither",
+      colorMode: "mono",
+      palette: "ultraviolet",
+      toneCurve: "linear",
+      threshold: 120,
+      noiseAmount: 72,
+      contrast: 1.45,
+      seed: 611,
+    },
+    right: {
+      type: "ignDither",
+      colorMode: "thermal",
+      palette: "ultraviolet",
+      toneCurve: "gamma",
+      threshold: 136,
+      noiseAmount: 60,
+      contrast: 1.32,
+      seed: 864,
+    },
+  },
+};
+
 const filterElements = {
   left: getFilterElements("left"),
   right: getFilterElements("right"),
@@ -111,9 +283,16 @@ const state = {
   animationFrameId: null,
   isDraggingSplit: false,
   splitRatio: 0.5,
+  isApplyingState: false,
+  shareUpdateId: null,
   autoSelection: {
     left: createEmptyAutoSelection(),
     right: createEmptyAutoSelection(),
+  },
+  metrics: {
+    fps: 0,
+    renderMs: 0,
+    lastTimestamp: 0,
   },
 };
 
@@ -123,14 +302,19 @@ function initialize() {
   setupFilterControls("left");
   setupFilterControls("right");
   setupSplitControls();
+  setupPresetControls();
+  setupActionButtons();
+  restoreStateFromUrl();
   drawIdleState();
   updateFilterLabels();
   updateAutoNote("left");
   updateAutoNote("right");
+  updateMetricsHud();
 
   startCameraButton.addEventListener("click", startCamera);
   stopCameraButton.addEventListener("click", stopCamera);
   window.addEventListener("beforeunload", stopCamera);
+  window.addEventListener("hashchange", restoreStateFromUrl);
 
   if (!navigator.mediaDevices?.getUserMedia) {
     setStatus("This browser does not support webcam access.");
@@ -152,6 +336,8 @@ function createEmptyAutoSelection() {
 function getFilterElements(side) {
   return {
     type: document.getElementById(`${side}FilterType`),
+    colorMode: document.getElementById(`${side}ColorMode`),
+    palette: document.getElementById(`${side}Palette`),
     toneCurve: document.getElementById(`${side}ToneCurve`),
     autoNote: document.getElementById(`${side}AutoNote`),
     threshold: document.getElementById(`${side}Threshold`),
@@ -175,12 +361,22 @@ function setupFilterControls(side) {
     syncControlStates(side);
     updateFilterLabels();
     updateAutoNote(side);
+    scheduleUrlStateUpdate();
+  });
+
+  ["colorMode", "palette"].forEach((key) => {
+    elements[key].addEventListener("change", () => {
+      syncControlStates(side);
+      updateFilterLabels();
+      scheduleUrlStateUpdate();
+    });
   });
 
   elements.toneCurve.addEventListener("change", () => {
     resetAutoSelection(side);
     updateFilterLabels();
     updateAutoNote(side);
+    scheduleUrlStateUpdate();
   });
 
   ["threshold", "noiseAmount", "contrast", "seed"].forEach((key) => {
@@ -188,11 +384,26 @@ function setupFilterControls(side) {
       elements.outputs[key].value = elements[key].value;
       resetAutoSelection(side);
       updateAutoNote(side);
+      scheduleUrlStateUpdate();
     });
     elements.outputs[key].value = elements[key].value;
   });
 
   syncControlStates(side);
+}
+
+function setupPresetControls() {
+  document.querySelectorAll("[data-preset]").forEach((button) => {
+    button.addEventListener("click", () => {
+      applyPreset(button.dataset.preset);
+    });
+  });
+}
+
+function setupActionButtons() {
+  captureSnapshotButton.addEventListener("click", captureSnapshot);
+  copyShareLinkButton.addEventListener("click", copyShareLink);
+  resetLabButton.addEventListener("click", () => applyPreset("detail"));
 }
 
 function resetAutoSelection(side) {
@@ -202,16 +413,19 @@ function resetAutoSelection(side) {
 function syncControlStates(side) {
   const elements = filterElements[side];
   const mode = elements.type.value;
+  const colorMode = elements.colorMode.value;
   const needsThreshold = THRESHOLD_MODES.has(mode);
   const needsNoise = NOISE_MODES.has(mode);
-  const needsContrast = mode !== "original";
-  const needsToneCurve = mode !== "original";
+  const needsContrast = mode !== "original" || colorMode !== "mono";
+  const needsToneCurve = mode !== "original" || colorMode !== "mono";
+  const needsPalette = colorMode !== "mono";
 
   toggleControl(elements.threshold, needsThreshold);
   toggleControl(elements.noiseAmount, needsNoise);
   toggleControl(elements.seed, needsNoise);
   toggleControl(elements.contrast, needsContrast);
   toggleControl(elements.toneCurve, needsToneCurve);
+  toggleControl(elements.palette, needsPalette);
 }
 
 function toggleControl(element, enabled) {
@@ -221,7 +435,7 @@ function toggleControl(element, enabled) {
 }
 
 function setupSplitControls() {
-  setSplit(Number(splitSlider.value) / 100);
+  setSplit(Number(splitSlider.value) / 100, { silent: true });
 
   splitSlider.addEventListener("input", () => {
     setSplit(Number(splitSlider.value) / 100);
@@ -243,6 +457,7 @@ function setupSplitControls() {
   comparisonStage.addEventListener("pointerup", (event) => {
     state.isDraggingSplit = false;
     comparisonStage.releasePointerCapture(event.pointerId);
+    scheduleUrlStateUpdate();
   });
 
   comparisonStage.addEventListener("pointerleave", () => {
@@ -268,13 +483,17 @@ function updateSplitFromPointer(event) {
   setSplit(ratio);
 }
 
-function setSplit(ratio) {
+function setSplit(ratio, options = {}) {
   state.splitRatio = clamp(ratio, 0.1, 0.9);
   comparisonStage.style.setProperty(
     "--split-pos",
     `${(state.splitRatio * 100).toFixed(2)}%`
   );
   splitSlider.value = Math.round(state.splitRatio * 100);
+
+  if (!options.silent) {
+    scheduleUrlStateUpdate();
+  }
 }
 
 async function startCamera() {
@@ -352,18 +571,20 @@ function startRenderLoop() {
       return;
     }
 
+    const renderStartedAt = performance.now();
     frameContext.drawImage(sourceVideo, 0, 0, frameCanvas.width, frameCanvas.height);
     const frame = frameContext.getImageData(0, 0, frameCanvas.width, frameCanvas.height);
 
     const leftOptions = resolveFilterOptions("left", frame, timestamp);
     const rightOptions = resolveFilterOptions("right", frame, timestamp);
 
-    const leftImage = applySelectedFilter(frame, leftOptions);
-    const rightImage = applySelectedFilter(frame, rightOptions);
+    const leftImage = applyRenderPipeline(frame, leftOptions);
+    const rightImage = applyRenderPipeline(frame, rightOptions);
 
     leftContext.putImageData(leftImage, 0, 0);
     rightContext.putImageData(rightImage, 0, 0);
     drawSplitComparison();
+    updateFrameMetrics(timestamp, performance.now() - renderStartedAt);
 
     state.animationFrameId = requestAnimationFrame(render);
   };
@@ -452,8 +673,9 @@ function drawIdleState() {
   const width = comparisonCanvas.width;
   const height = comparisonCanvas.height;
   const gradient = comparisonContext.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#142f43");
-  gradient.addColorStop(0.5, "#d6572f");
+  gradient.addColorStop(0, "#132d36");
+  gradient.addColorStop(0.44, "#c94e40");
+  gradient.addColorStop(0.68, "#2aa7a7");
   gradient.addColorStop(1, "#f8e5cc");
 
   comparisonContext.fillStyle = gradient;
@@ -472,38 +694,41 @@ function drawIdleState() {
   comparisonContext.fillStyle = glow;
   comparisonContext.fillRect(0, 0, width, height);
 
-  comparisonContext.fillStyle = "rgba(20, 20, 20, 0.9)";
+  comparisonContext.fillStyle = "rgba(20, 20, 20, 0.88)";
   comparisonContext.fillRect(0, height * 0.58, width, height * 0.42);
 
   comparisonContext.fillStyle = "#fff4e5";
   comparisonContext.font = "700 32px 'Space Grotesk', sans-serif";
   comparisonContext.fillText("Start camera", 32, 48);
   comparisonContext.font = "500 18px 'IBM Plex Mono', monospace";
-  comparisonContext.fillText("then drag the divider to compare A vs B", 32, 78);
+  comparisonContext.fillText("then compare dither, color, and detail", 32, 78);
 }
 
 function updateFilterLabels() {
   leftFilterLabel.textContent = buildFilterLabel("A", "left");
   rightFilterLabel.textContent = buildFilterLabel("B", "right");
+  updateMetricsHud();
 }
 
 function buildFilterLabel(prefix, side) {
   const elements = filterElements[side];
   const mode = elements.type.value;
+  const colorLabel =
+    elements.colorMode.value === "mono" ? "" : ` · ${getColorModeLabel(elements.colorMode.value)}`;
 
   if (mode === "autoDetail") {
     const auto = state.autoSelection[side];
     if (!auto.mode) {
-      return `${prefix} · Auto Detail`;
+      return `${prefix} · Auto Detail${colorLabel}`;
     }
-    return `${prefix} · Auto: ${getModeLabel(auto.mode)}`;
+    return `${prefix} · Auto: ${getModeLabel(auto.mode)}${colorLabel}`;
   }
 
   if (mode === "original") {
-    return `${prefix} · ${getModeLabel(mode)}`;
+    return `${prefix} · ${getModeLabel(mode)}${colorLabel}`;
   }
 
-  return `${prefix} · ${getModeLabel(mode)} · ${getToneLabel(elements.toneCurve.value)}`;
+  return `${prefix} · ${getModeLabel(mode)} · ${getToneLabel(elements.toneCurve.value)}${colorLabel}`;
 }
 
 function updateAutoNote(side) {
@@ -528,6 +753,44 @@ function updateAutoNote(side) {
     ` · edges ${(auto.edgeScore * 100).toFixed(1)}% · tone ${(auto.toneScore * 100).toFixed(1)}%`;
 }
 
+function updateFrameMetrics(timestamp, renderMs) {
+  if (state.metrics.lastTimestamp) {
+    const delta = Math.max(1, timestamp - state.metrics.lastTimestamp);
+    const instantFps = 1000 / delta;
+    state.metrics.fps = state.metrics.fps
+      ? state.metrics.fps * 0.86 + instantFps * 0.14
+      : instantFps;
+  }
+
+  state.metrics.lastTimestamp = timestamp;
+  state.metrics.renderMs = state.metrics.renderMs
+    ? state.metrics.renderMs * 0.84 + renderMs * 0.16
+    : renderMs;
+  updateMetricsHud();
+}
+
+function updateMetricsHud() {
+  const left = getAutoMetricLabel("left");
+  const right = getAutoMetricLabel("right");
+  const fps = state.metrics.fps ? state.metrics.fps.toFixed(0) : "--";
+  const renderMs = state.metrics.renderMs ? state.metrics.renderMs.toFixed(1) : "--";
+
+  metricsHud.textContent = `FPS ${fps} · ${renderMs}ms · ${left} · ${right}`;
+}
+
+function getAutoMetricLabel(side) {
+  const selectedMode = filterElements[side].type.value;
+
+  if (selectedMode !== "autoDetail") {
+    return `${side.toUpperCase()} ${getModeLabel(selectedMode)}`;
+  }
+
+  const auto = state.autoSelection[side];
+  return auto.mode
+    ? `${side.toUpperCase()} ${getModeLabel(auto.mode)} ${(auto.score * 100).toFixed(0)}%`
+    : `${side.toUpperCase()} Auto`;
+}
+
 function getModeLabel(mode) {
   switch (mode) {
     case "autoDetail":
@@ -538,6 +801,8 @@ function getModeLabel(mode) {
       return "White Noise";
     case "ignDither":
       return "IGN";
+    case "rgbDither":
+      return "RGB Dither";
     case "bayer4":
       return "Bayer 4x4";
     case "floydSteinberg":
@@ -571,17 +836,40 @@ function getToneLabel(toneCurve) {
   }
 }
 
+function getColorModeLabel(colorMode) {
+  switch (colorMode) {
+    case "duotone":
+      return "Duotone";
+    case "palette":
+      return "Palette";
+    case "source":
+      return "Source Color";
+    case "thermal":
+      return "Thermal";
+    case "mono":
+    default:
+      return "Native";
+  }
+}
+
 function getFilterOptions(side) {
   const elements = filterElements[side];
 
   return {
     mode: elements.type.value,
+    colorMode: elements.colorMode.value,
+    palette: elements.palette.value,
     toneCurve: elements.toneCurve.value,
     threshold: Number(elements.threshold.value),
     noiseAmount: Number(elements.noiseAmount.value),
     contrast: Number(elements.contrast.value),
     seed: Number(elements.seed.value),
   };
+}
+
+function applyRenderPipeline(imageData, options) {
+  const filtered = applySelectedFilter(imageData, options);
+  return applyColorMode(imageData, filtered, options);
 }
 
 function applySelectedFilter(imageData, options) {
@@ -592,6 +880,8 @@ function applySelectedFilter(imageData, options) {
       return applyOrderedDitherFilter(imageData, options, BAYER_4X4_MATRIX);
     case "ignDither":
       return applyInterleavedGradientNoiseFilter(imageData, options);
+    case "rgbDither":
+      return applyRgbDitherFilter(imageData, options);
     case "floydSteinberg":
       return applyErrorDiffusionFilter(imageData, options, ERROR_DIFFUSION_FILTERS.floydSteinberg);
     case "atkinson":
@@ -684,6 +974,39 @@ function applyInterleavedGradientNoiseFilter(imageData, options = {}) {
       destination[index] = value;
       destination[index + 1] = value;
       destination[index + 2] = value;
+      destination[index + 3] = source[index + 3];
+    }
+  }
+
+  return output;
+}
+
+function applyRgbDitherFilter(imageData, options = {}) {
+  const {
+    threshold = 128,
+    noiseAmount = 42,
+    contrast = 1,
+    seed = 0,
+    toneCurve = "linear",
+  } = options;
+
+  const source = imageData.data;
+  const output = new ImageData(imageData.width, imageData.height);
+  const destination = output.data;
+
+  for (let y = 0; y < imageData.height; y += 1) {
+    for (let x = 0; x < imageData.width; x += 1) {
+      const index = (y * imageData.width + x) * 4;
+      const rNoise = (hashNoise(x, y, seed + 11) - 0.5) * noiseAmount * 2;
+      const gNoise = (hashNoise(x, y, seed + 37) - 0.5) * noiseAmount * 2;
+      const bNoise = (hashNoise(x, y, seed + 73) - 0.5) * noiseAmount * 2;
+
+      destination[index] =
+        applyChannelTone(source[index], contrast, toneCurve) + rNoise >= threshold ? 255 : 0;
+      destination[index + 1] =
+        applyChannelTone(source[index + 1], contrast, toneCurve) + gNoise >= threshold ? 255 : 0;
+      destination[index + 2] =
+        applyChannelTone(source[index + 2], contrast, toneCurve) + bNoise >= threshold ? 255 : 0;
       destination[index + 3] = source[index + 3];
     }
   }
@@ -814,6 +1137,51 @@ function applyGrayscaleFilter(imageData, options = {}) {
   return output;
 }
 
+function applyColorMode(sourceImageData, filteredImageData, options = {}) {
+  const { colorMode = "mono", palette = "paperInk", contrast = 1, toneCurve = "linear" } =
+    options;
+
+  if (colorMode === "mono") {
+    return filteredImageData;
+  }
+
+  const source = sourceImageData.data;
+  const filtered = filteredImageData.data;
+  const output = new ImageData(filteredImageData.width, filteredImageData.height);
+  const destination = output.data;
+  const colors = COLOR_PALETTES[palette] || COLOR_PALETTES.paperInk;
+
+  for (let index = 0; index < filtered.length; index += 4) {
+    const sourceR = source[index];
+    const sourceG = source[index + 1];
+    const sourceB = source[index + 2];
+    const sourceLevel = getToneAdjustedLevel(sourceR, sourceG, sourceB, contrast, toneCurve);
+    const filteredLevel = getLuminance(filtered[index], filtered[index + 1], filtered[index + 2]);
+    const coverage = clamp(filteredLevel / 255, 0, 1);
+    const sourceMix = 0.18 + coverage * 0.82;
+    let color;
+
+    if (colorMode === "duotone") {
+      color = mixColor(colors[0], colors[colors.length - 1], coverage);
+    } else if (colorMode === "palette") {
+      const paletteColor = samplePalette(colors, sourceLevel / 255);
+      color = mixColor(colors[0], paletteColor, 0.28 + coverage * 0.72);
+    } else if (colorMode === "source") {
+      color = mixColor(colors[0], [sourceR, sourceG, sourceB], sourceMix);
+    } else {
+      const paletteColor = samplePalette(colors, sourceLevel / 255);
+      color = scaleColor(paletteColor, 0.34 + coverage * 0.66);
+    }
+
+    destination[index] = color[0];
+    destination[index + 1] = color[1];
+    destination[index + 2] = color[2];
+    destination[index + 3] = filtered[index + 3];
+  }
+
+  return output;
+}
+
 function findBestDetailFilter(imageData, options) {
   const sourceLevels = extractToneLevels(imageData, options.contrast, options.toneCurve);
   const sourceBlur = boxBlurLevels(sourceLevels, imageData.width, imageData.height, 2);
@@ -884,6 +1252,166 @@ function scoreDetailPreservation(sourceBlur, candidateImage) {
   };
 }
 
+function applyPreset(name) {
+  const preset = PRESETS[name] || PRESETS.detail;
+
+  state.isApplyingState = true;
+  setSideState("left", preset.left);
+  setSideState("right", preset.right);
+  setSplit(preset.split, { silent: true });
+  state.isApplyingState = false;
+
+  resetAutoSelection("left");
+  resetAutoSelection("right");
+  syncControlStates("left");
+  syncControlStates("right");
+  updateFilterLabels();
+  updateAutoNote("left");
+  updateAutoNote("right");
+  scheduleUrlStateUpdate();
+}
+
+function setSideState(side, values) {
+  const elements = filterElements[side];
+
+  CONTROL_KEYS.forEach((key) => {
+    if (values[key] === undefined) {
+      return;
+    }
+
+    elements[key].value = values[key];
+  });
+
+  updateOutputValues(side);
+}
+
+function getSideState(side) {
+  const elements = filterElements[side];
+
+  return {
+    type: elements.type.value,
+    colorMode: elements.colorMode.value,
+    palette: elements.palette.value,
+    toneCurve: elements.toneCurve.value,
+    threshold: Number(elements.threshold.value),
+    noiseAmount: Number(elements.noiseAmount.value),
+    contrast: Number(elements.contrast.value),
+    seed: Number(elements.seed.value),
+  };
+}
+
+function updateOutputValues(side) {
+  const elements = filterElements[side];
+  ["threshold", "noiseAmount", "contrast", "seed"].forEach((key) => {
+    elements.outputs[key].value = elements[key].value;
+  });
+}
+
+function getLabState() {
+  return {
+    split: Number(state.splitRatio.toFixed(3)),
+    left: getSideState("left"),
+    right: getSideState("right"),
+  };
+}
+
+function restoreStateFromUrl() {
+  if (!window.location.hash.startsWith("#lab=")) {
+    return;
+  }
+
+  try {
+    const raw = window.location.hash.slice(5);
+    const decoded = JSON.parse(decodeBase64Url(raw));
+
+    state.isApplyingState = true;
+    setSideState("left", decoded.left || PRESETS.detail.left);
+    setSideState("right", decoded.right || PRESETS.detail.right);
+    setSplit(Number(decoded.split || 0.5), { silent: true });
+    state.isApplyingState = false;
+
+    resetAutoSelection("left");
+    resetAutoSelection("right");
+    syncControlStates("left");
+    syncControlStates("right");
+    updateFilterLabels();
+    updateAutoNote("left");
+    updateAutoNote("right");
+  } catch (error) {
+    console.warn("Could not restore lab state from URL.", error);
+  } finally {
+    state.isApplyingState = false;
+  }
+}
+
+function scheduleUrlStateUpdate() {
+  if (state.isApplyingState) {
+    return;
+  }
+
+  window.clearTimeout(state.shareUpdateId);
+  state.shareUpdateId = window.setTimeout(writeStateToUrl, 180);
+}
+
+function writeStateToUrl() {
+  const encoded = encodeBase64Url(JSON.stringify(getLabState()));
+  const nextUrl = `${window.location.pathname}${window.location.search}#lab=${encoded}`;
+  window.history.replaceState(null, "", nextUrl);
+}
+
+async function copyShareLink() {
+  writeStateToUrl();
+  const url = window.location.href;
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(url);
+    } else {
+      fallbackCopyText(url);
+    }
+    setStatus("Share link copied with the current lab settings.");
+  } catch (error) {
+    setStatus(`Could not copy automatically. Share URL: ${url}`);
+  }
+}
+
+function fallbackCopyText(text) {
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "");
+  input.style.position = "fixed";
+  input.style.left = "-9999px";
+  document.body.append(input);
+  input.select();
+  document.execCommand("copy");
+  input.remove();
+}
+
+function captureSnapshot() {
+  const width = comparisonCanvas.width;
+  const height = comparisonCanvas.height;
+  const titleHeight = 62;
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = width;
+  exportCanvas.height = height + titleHeight;
+  const context = exportCanvas.getContext("2d");
+
+  context.fillStyle = "#111419";
+  context.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+  context.drawImage(comparisonCanvas, 0, titleHeight);
+
+  context.fillStyle = "#f9f2e9";
+  context.font = "700 20px 'Space Grotesk', sans-serif";
+  context.fillText("Webcam Dither Lab", 20, 26);
+  context.font = "500 13px 'IBM Plex Mono', monospace";
+  context.fillText(`${leftFilterLabel.textContent} / ${rightFilterLabel.textContent}`, 20, 48);
+
+  const link = document.createElement("a");
+  link.href = exportCanvas.toDataURL("image/png");
+  link.download = `webcam-dither-lab-${Date.now()}.png`;
+  link.click();
+}
+
 function extractToneLevels(imageData, contrast, toneCurve) {
   const source = imageData.data;
   const levels = new Float32Array(imageData.width * imageData.height);
@@ -906,7 +1434,7 @@ function extractImageLevels(imageData) {
   const levels = new Float32Array(imageData.width * imageData.height);
 
   for (let index = 0, pixelIndex = 0; index < source.length; index += 4, pixelIndex += 1) {
-    levels[pixelIndex] = source[index];
+    levels[pixelIndex] = getLuminance(source[index], source[index + 1], source[index + 2]);
   }
 
   return levels;
@@ -988,8 +1516,16 @@ function cloneImageData(imageData) {
 }
 
 function getToneAdjustedLevel(r, g, b, contrast, toneCurve) {
-  const luminance = r * 0.2126 + g * 0.7152 + b * 0.0722;
-  const toned = applyToneCurve(luminance, toneCurve);
+  const toned = applyToneCurve(getLuminance(r, g, b), toneCurve);
+  return clamp((toned - 128) * contrast + 128, 0, 255);
+}
+
+function getLuminance(r, g, b) {
+  return r * 0.2126 + g * 0.7152 + b * 0.0722;
+}
+
+function applyChannelTone(value, contrast, toneCurve) {
+  const toned = applyToneCurve(value, toneCurve);
   return clamp((toned - 128) * contrast + 128, 0, 255);
 }
 
@@ -1005,6 +1541,43 @@ function applyToneCurve(luminance, toneCurve) {
     default:
       return normalized * 255;
   }
+}
+
+function samplePalette(colors, t) {
+  const scaled = clamp(t, 0, 1) * (colors.length - 1);
+  const index = Math.floor(scaled);
+  const nextIndex = Math.min(colors.length - 1, index + 1);
+  return mixColor(colors[index], colors[nextIndex], scaled - index);
+}
+
+function mixColor(a, b, t) {
+  const amount = clamp(t, 0, 1);
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * amount),
+    Math.round(a[1] + (b[1] - a[1]) * amount),
+    Math.round(a[2] + (b[2] - a[2]) * amount),
+  ];
+}
+
+function scaleColor(color, amount) {
+  return [
+    Math.round(clamp(color[0] * amount, 0, 255)),
+    Math.round(clamp(color[1] * amount, 0, 255)),
+    Math.round(clamp(color[2] * amount, 0, 255)),
+  ];
+}
+
+function encodeBase64Url(value) {
+  return btoa(unescape(encodeURIComponent(value)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function decodeBase64Url(value) {
+  const padded = `${value}${"=".repeat((4 - (value.length % 4)) % 4)}`;
+  const normalized = padded.replace(/-/g, "+").replace(/_/g, "/");
+  return decodeURIComponent(escape(atob(normalized)));
 }
 
 function interleavedGradientNoise(x, y, seed) {
@@ -1042,5 +1615,6 @@ function setStatus(message) {
 window.applyNoiseDitherFilter = applyNoiseDitherFilter;
 window.applyOrderedDitherFilter = applyOrderedDitherFilter;
 window.applyErrorDiffusionFilter = applyErrorDiffusionFilter;
+window.applyColorMode = applyColorMode;
 window.findBestDetailFilter = findBestDetailFilter;
 window.applySelectedFilter = applySelectedFilter;
