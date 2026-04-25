@@ -1,0 +1,369 @@
+:root {
+  color-scheme: light;
+  --bg: #f4eee4;
+  --panel: rgba(255, 251, 245, 0.88);
+  --text: #1d1d1b;
+  --muted: #655f59;
+  --line: rgba(29, 29, 27, 0.12);
+  --shadow: 0 18px 48px rgba(58, 41, 20, 0.12);
+  --primary: #d6572f;
+  --primary-dark: #8a3419;
+  --split-pos: 50%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Space Grotesk", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(214, 87, 47, 0.2), transparent 26%),
+    radial-gradient(circle at top right, rgba(112, 150, 255, 0.16), transparent 24%),
+    linear-gradient(180deg, var(--bg), #f7f3ec 60%, #efe3d0 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(circle at center, black 56%, transparent 100%);
+}
+
+.page {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0 56px;
+}
+
+.hero {
+  padding: 24px 0 20px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  max-width: 13ch;
+  font-size: clamp(2.4rem, 6vw, 5rem);
+  line-height: 0.94;
+  letter-spacing: -0.06em;
+}
+
+.intro {
+  max-width: 62ch;
+  margin-top: 18px;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.hero-actions,
+.card-header {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-actions {
+  margin-top: 24px;
+}
+
+.panel {
+  backdrop-filter: blur(14px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease,
+    opacity 140ms ease;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.button-primary {
+  background: var(--primary);
+  color: #fff8f0;
+}
+
+.button-secondary {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.viewer-card {
+  padding: 18px;
+}
+
+.viewer-header {
+  margin-bottom: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.status-text {
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.comparison-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.comparison-stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(26, 26, 26, 0.08), rgba(255, 255, 255, 0.32));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  touch-action: none;
+}
+
+#comparisonCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.split-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--split-pos);
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+}
+
+.split-handle {
+  position: absolute;
+  top: 50%;
+  left: var(--split-pos);
+  width: 56px;
+  height: 56px;
+  transform: translate(-50%, -50%);
+  border: none;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(245, 233, 220, 0.95));
+  box-shadow:
+    0 10px 30px rgba(19, 14, 10, 0.16),
+    inset 0 0 0 1px rgba(29, 29, 27, 0.08);
+  cursor: ew-resize;
+}
+
+.split-handle::before,
+.split-handle::after {
+  content: "";
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  width: 2px;
+  background: rgba(29, 29, 27, 0.32);
+}
+
+.split-handle::before {
+  left: 23px;
+}
+
+.split-handle::after {
+  right: 23px;
+}
+
+.filter-tag {
+  position: absolute;
+  top: 16px;
+  max-width: calc(50% - 28px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  background: rgba(24, 21, 18, 0.72);
+  color: #fff5ea;
+  backdrop-filter: blur(8px);
+}
+
+.filter-tag-left {
+  left: 16px;
+}
+
+.filter-tag-right {
+  right: 16px;
+}
+
+.split-slider-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.split-slider-wrap label,
+.control label,
+.filter-panel-header h2,
+.notes h2 {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.split-slider-wrap input,
+.control input,
+.control select {
+  width: 100%;
+}
+
+input[type="range"] {
+  accent-color: var(--primary);
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 22px;
+}
+
+.filter-panel {
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.filter-panel-header {
+  display: grid;
+  gap: 6px;
+}
+
+.filter-panel-header p,
+.notes p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.auto-note {
+  min-height: 3.4em;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px dashed rgba(29, 29, 27, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.46);
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.control {
+  display: grid;
+  gap: 8px;
+}
+
+.control output {
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--muted);
+}
+
+.control select,
+.control input[type="range"] {
+  min-height: 42px;
+}
+
+.control select {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.74);
+  font: inherit;
+}
+
+.control.is-disabled {
+  opacity: 0.46;
+}
+
+.notes {
+  margin-top: 20px;
+  padding: 20px;
+}
+
+code,
+pre {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+pre {
+  overflow-x: auto;
+  margin: 16px 0 0;
+  padding: 16px;
+  border-radius: 18px;
+  background: #221a15;
+  color: #fff3e8;
+}
+
+@media (max-width: 900px) {
+  .page {
+    width: min(100% - 20px, 1240px);
+    padding-top: 24px;
+  }
+
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-tag {
+    top: auto;
+    bottom: 16px;
+  }
+}

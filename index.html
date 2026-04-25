@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Webcam Filter Compare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow">Live Webcam Filter Lab</p>
+        <h1>Compare two filters on the same camera feed</h1>
+        <p class="intro">
+          Start the webcam, drag the split handle, and tune two filter lanes in
+          parallel so you can see exactly which version feels better.
+        </p>
+        <div class="hero-actions">
+          <button id="startCamera" class="button button-primary" type="button">
+            Start camera
+          </button>
+          <button id="stopCamera" class="button button-secondary" type="button" disabled>
+            Stop camera
+          </button>
+        </div>
+      </section>
+
+      <section class="panel viewer-card">
+        <div class="card-header viewer-header">
+          <div>
+            <h2>Live Comparison</h2>
+            <p id="cameraStatus" class="status-text">
+              Camera idle. Press Start camera to begin.
+            </p>
+          </div>
+        </div>
+
+        <div class="comparison-shell">
+          <div class="comparison-stage" id="comparisonStage">
+            <canvas id="comparisonCanvas" width="640" height="360"></canvas>
+            <div class="filter-tag filter-tag-left" id="leftFilterLabel">
+              A · Auto Detail
+            </div>
+            <div class="filter-tag filter-tag-right" id="rightFilterLabel">
+              B · Parker 3x3
+            </div>
+            <div class="split-line" aria-hidden="true"></div>
+            <button
+              id="splitHandle"
+              class="split-handle"
+              type="button"
+              aria-label="Drag to resize the filter split"
+            ></button>
+          </div>
+
+          <div class="split-slider-wrap">
+            <label for="splitSlider">Split position</label>
+            <input id="splitSlider" type="range" min="10" max="90" value="50" />
+          </div>
+        </div>
+
+        <video id="sourceVideo" playsinline muted hidden></video>
+        <canvas id="frameCanvas" width="640" height="360" hidden></canvas>
+        <canvas id="leftCanvas" width="640" height="360" hidden></canvas>
+        <canvas id="rightCanvas" width="640" height="360" hidden></canvas>
+      </section>
+
+      <section class="filter-grid">
+        <article class="panel filter-panel">
+          <div class="filter-panel-header">
+            <h2>Filter A</h2>
+            <p>Shown on the left side of the split.</p>
+          </div>
+
+          <div class="control">
+            <label for="leftFilterType">Mode</label>
+            <select id="leftFilterType">
+              <option value="autoDetail" selected>Auto Best Detail</option>
+              <option value="parker3">Parker 3x3</option>
+              <option value="noiseDither">White Noise</option>
+              <option value="ignDither">Interleaved Gradient Noise</option>
+              <option value="bayer4">Bayer 4x4</option>
+              <option value="floydSteinberg">Floyd-Steinberg</option>
+              <option value="atkinson">Atkinson</option>
+              <option value="burkes">Burkes</option>
+              <option value="sierraLite">Sierra Lite</option>
+              <option value="threshold">Threshold</option>
+              <option value="grayscale">Grayscale</option>
+              <option value="original">Original</option>
+            </select>
+          </div>
+
+          <div class="control">
+            <label for="leftToneCurve">Tone Model</label>
+            <select id="leftToneCurve">
+              <option value="perceptual" selected>Perceptual (sqrt)</option>
+              <option value="linear">Linear</option>
+              <option value="gamma">Gamma 2.2</option>
+            </select>
+          </div>
+
+          <p id="leftAutoNote" class="auto-note">
+            Auto detail is ready to analyze the current frame.
+          </p>
+
+          <div class="control">
+            <label for="leftThreshold">Threshold</label>
+            <input id="leftThreshold" type="range" min="0" max="255" value="128" />
+            <output id="leftThresholdValue" for="leftThreshold">128</output>
+          </div>
+
+          <div class="control">
+            <label for="leftNoiseAmount">Noise Amount</label>
+            <input id="leftNoiseAmount" type="range" min="0" max="128" value="42" />
+            <output id="leftNoiseAmountValue" for="leftNoiseAmount">42</output>
+          </div>
+
+          <div class="control">
+            <label for="leftContrast">Contrast</label>
+            <input
+              id="leftContrast"
+              type="range"
+              min="0.4"
+              max="2.2"
+              step="0.05"
+              value="1.15"
+            />
+            <output id="leftContrastValue" for="leftContrast">1.15</output>
+          </div>
+
+          <div class="control">
+            <label for="leftSeed">Noise Seed</label>
+            <input id="leftSeed" type="range" min="0" max="1000" value="137" />
+            <output id="leftSeedValue" for="leftSeed">137</output>
+          </div>
+        </article>
+
+        <article class="panel filter-panel">
+          <div class="filter-panel-header">
+            <h2>Filter B</h2>
+            <p>Shown on the right side of the split.</p>
+          </div>
+
+          <div class="control">
+            <label for="rightFilterType">Mode</label>
+            <select id="rightFilterType">
+              <option value="autoDetail">Auto Best Detail</option>
+              <option value="parker3" selected>Parker 3x3</option>
+              <option value="noiseDither">White Noise</option>
+              <option value="ignDither">Interleaved Gradient Noise</option>
+              <option value="bayer4">Bayer 4x4</option>
+              <option value="floydSteinberg">Floyd-Steinberg</option>
+              <option value="atkinson">Atkinson</option>
+              <option value="burkes">Burkes</option>
+              <option value="sierraLite">Sierra Lite</option>
+              <option value="threshold">Threshold</option>
+              <option value="grayscale">Grayscale</option>
+              <option value="original">Original</option>
+            </select>
+          </div>
+
+          <div class="control">
+            <label for="rightToneCurve">Tone Model</label>
+            <select id="rightToneCurve">
+              <option value="linear" selected>Linear</option>
+              <option value="perceptual">Perceptual (sqrt)</option>
+              <option value="gamma">Gamma 2.2</option>
+            </select>
+          </div>
+
+          <p id="rightAutoNote" class="auto-note">
+            Manual mode. Switch to Auto Best Detail to let the app score filters.
+          </p>
+
+          <div class="control">
+            <label for="rightThreshold">Threshold</label>
+            <input id="rightThreshold" type="range" min="0" max="255" value="128" />
+            <output id="rightThresholdValue" for="rightThreshold">128</output>
+          </div>
+
+          <div class="control">
+            <label for="rightNoiseAmount">Noise Amount</label>
+            <input id="rightNoiseAmount" type="range" min="0" max="128" value="12" />
+            <output id="rightNoiseAmountValue" for="rightNoiseAmount">12</output>
+          </div>
+
+          <div class="control">
+            <label for="rightContrast">Contrast</label>
+            <input
+              id="rightContrast"
+              type="range"
+              min="0.4"
+              max="2.2"
+              step="0.05"
+              value="1.05"
+            />
+            <output id="rightContrastValue" for="rightContrast">1.05</output>
+          </div>
+
+          <div class="control">
+            <label for="rightSeed">Noise Seed</label>
+            <input id="rightSeed" type="range" min="0" max="1000" value="412" />
+            <output id="rightSeedValue" for="rightSeed">412</output>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel notes">
+        <h2>How To Use It</h2>
+        <p>
+          Drag the divider directly on the preview or use the split slider
+          below it. Both sides process the same webcam frame, so differences
+          come only from the filter settings. Auto Best Detail evaluates
+          multiple candidates and picks the one with the strongest combined
+          tone-preservation and edge-preservation score.
+        </p>
+        <pre><code>applyNoiseDitherFilter(imageData, {
+  threshold: 128,
+  noiseAmount: 42,
+  contrast: 1.15,
+  seed: 137
+});</code></pre>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
